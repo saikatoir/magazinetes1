@@ -90,40 +90,6 @@
     </div>
 
     <script>
-        const API_URL = 'https://magazinetes1.onrender.com'; // Your Render URL
-
-uploadForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Create FormData to handle file uploads
-    const formData = new FormData();
-    formData.append('title', document.getElementById('title').value);
-    formData.append('category', document.getElementById('category').value);
-    formData.append('date', document.getElementById('date').value);
-    formData.append('description', "A premium magazine issue."); 
-    
-    // Add the files
-    const coverFile = document.getElementById('coverFile').files[0];
-    const pdfFile = document.getElementById('pdfFile').files[0];
-    
-    if (coverFile) formData.append('cover', coverFile);
-    if (pdfFile) formData.append('pdf', pdfFile);
-
-    try {
-        const response = await fetch(`${API_URL}/api/magazines`, {
-            method: 'POST',
-            body: formData // No Headers needed, browser sets Content-Type for FormData
-        });
-
-        if (response.ok) {
-            alert('Magazine uploaded to Database successfully!');
-            uploadForm.reset();
-            window.location.href = 'index.html'; // Go see it live!
-        }
-    } catch (err) {
-        alert('Upload failed: ' + err.message);
-    }
-});
         const uploadForm = document.getElementById('uploadForm');
         const magList = document.getElementById('magList');
 
@@ -238,5 +204,4 @@ uploadForm.addEventListener('submit', async (e) => {
         loadMagazines();
     </script>
 </body>
-
 </html>
