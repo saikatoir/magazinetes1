@@ -7,6 +7,10 @@ const fs = require('fs');
 const db = require('./database');
 
 const app = express();
+const cors = require('cors'); //
+
+// Place this right after "const app = express();"
+app.use(cors()); // This allows Netlify to access your Render API
 const PORT = 3000;
 
 // Middleware
