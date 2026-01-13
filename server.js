@@ -1,3 +1,10 @@
+const cors = require('cors');
+
+// Allow your specific Netlify URL
+app.use(cors({
+    origin: 'https://melodic-lokum-039181.netlify.app/', // Replace with your actual Netlify URL
+    credentials: true
+}));
 const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
@@ -127,3 +134,4 @@ app.delete('/api/magazines/:id', requireAdmin, (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+
