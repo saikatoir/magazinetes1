@@ -1,4 +1,3 @@
-const cors = require('cors');
 const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
@@ -128,5 +127,6 @@ app.delete('/api/magazines/:id', requireAdmin, (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+
 
 
