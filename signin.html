@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Sign In - MagazinePori Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body{font-family:Inter, sans-serif;background:#f8fafc}</style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-medium mb-4">Admin Sign In</h2>
+        <form id="signinForm" class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-700">Username</label>
+                <input id="username" name="username" class="w-full border px-3 py-2 rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm text-gray-700">Password</label>
+                <input id="password" name="password" type="password" class="w-full border px-3 py-2 rounded" required>
+            </div>
+            <div id="errorMsg" class="text-red-500 text-sm hidden">Invalid credentials</div>
+            <div class="flex justify-end">
+                <button type="submit" class="px-4 py-2 bg-amber-500 text-white rounded">Sign in</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('signinForm').addEventListener('submit', async function(e){
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    document.getElementById('errorMsg').classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('errorMsg').textContent = "Connection error";
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
