@@ -514,6 +514,32 @@
 
     <script src="main.js"></script>
     <script>
+        const API_URL = 'https://magazinetes1.onrender.com';
+
+async function loadMagazine() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const magId = urlParams.get('id');
+
+    if (!magId) return;
+
+    try {
+        // Fetch the specific magazine details
+        const response = await fetch(`${API_URL}/api/magazines`);
+        const magazines = await response.json();
+        const mag = magazines.find(m => m.id == magId);
+
+        if (mag && mag.pdf_path) {
+            // Update the iframe or viewer with the PDF URL
+            const pdfUrl = `${API_URL}${mag.pdf_path}`;
+            document.getElementById('pdfViewer').src = pdfUrl;
+            document.getElementById('readerTitle').textContent = mag.title;
+        }
+    } catch (err) {
+        console.error("Could not load PDF:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadMagazine);
         (function () {
             function isFullscreenActive() {
                 return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
@@ -587,4 +613,5 @@
         })();
     </script>
 </body>
+
 </html>
