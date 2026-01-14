@@ -2,104 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MagazineHub Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MagazineHub | Premium Reader</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #0f172a; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617; 
+            overflow: hidden; 
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
         .font-display { font-family: 'Playfair Display', serif; }
         
-        /* Smooth transition for the header */
-        #readerHeader { transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
-        .hide-header { transform: translateY(-100%); }
+        /* Viewer Logic */
+        #viewerContainer {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            padding-top: 64px; /* Space for header */
+        }
 
-        /* Custom scrollbar for the PDF area */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #d4a574; border-radius: 10px; }
+        /* Canvas Security & Mobile Styling */
+        canvas {
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 95% !important;
+            height: auto !important;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
+        /* Header UI */
+        #readerHeader { 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 100;
+        }
+        .header-hidden { transform: translateY(-100%); }
+
+        /* Loader */
         .loader-ring {
-            border: 3px solid rgba(212, 165, 116, 0.2);
-            border-top: 3px solid #d4a574;
+            border: 2px solid rgba(245, 158, 11, 0.1);
+            border-top: 2px solid #f59e0b;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-white">
+<body oncontextmenu="return false;">
 
-    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-white/10 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 z-50">
-        <div class="flex items-center gap-6">
-            <a href="index.html" class="flex items-center text-white/70 hover:text-amber-400 transition-colors group">
-                <span class="mr-2 transform group-hover:-translate-x-1 transition-transform">←</span>
-                Back to Library
+    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 md:px-8">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="p-2 text-white/60 hover:text-amber-500 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
             </a>
-            <div class="h-6 w-px bg-white/20"></div>
             <div>
-                <h1 id="readerTitle" class="font-display text-lg font-bold tracking-tight opacity-0">Loading...</h1>
-                <p id="readerCategory" class="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold opacity-0"></p>
+                <h1 id="readerTitle" class="text-white font-semibold text-sm md:text-base truncate max-w-[150px] md:max-w-md">Loading Edition...</h1>
+                <p id="pageCountDisplay" class="text-amber-500 text-[10px] uppercase tracking-widest font-bold">Initializing</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-4">
-            <button onclick="toggleFullScreen()" class="p-2 hover:bg-white/10 rounded-lg transition-all title="Full Screen">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="flex items-center gap-2">
+            <button onclick="toggleFullScreen()" class="p-2 text-white/60 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
             </button>
-            <button class="bg-amber-500 hover:bg-amber-600 text-black font-bold px-4 py-2 rounded-md text-sm transition-all shadow-lg shadow-amber-500/20">
-                Share Issue
-            </button>
+            <div class="hidden md:block h-6 w-px bg-white/10 mx-2"></div>
+            <span class="hidden md:inline-block text-[10px] text-white/40 font-mono uppercase">Secure Stream</span>
         </div>
     </nav>
 
-    <div class="fixed top-16 left-0 w-full h-0.5 bg-white/5 z-50">
-        <div id="progressBar" class="h-full bg-amber-500 w-0 transition-all duration-300"></div>
+    <div id="loadingScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center text-center px-6">
+        <div class="loader-ring mb-6"></div>
+        <h2 class="font-display text-2xl text-white mb-2">Preparing Experience</h2>
+        <p id="loadStatus" class="text-white/40 text-xs uppercase tracking-widest font-mono">Syncing with Server...</p>
     </div>
 
-    <main class="relative w-full h-screen pt-16 flex bg-slate-950">
-        
-        <div id="loadingOverlay" class="absolute inset-0 z-40 bg-slate-950 flex flex-col items-center justify-center transition-opacity duration-500">
-            <div class="loader-ring mb-4"></div>
-            <p class="text-amber-500/50 text-xs font-mono tracking-widest uppercase">Preparing Digital Edition</p>
-        </div>
-
-        <div id="readerWrapper" class="flex-1 relative opacity-0">
-            <iframe id="pdfViewer" src="" class="w-full h-full border-none shadow-2xl"></iframe>
-        </div>
-
-        <aside id="infoSidebar" class="hidden xl:flex w-80 border-l border-white/5 p-8 flex-col justify-between bg-slate-900/50 transform translate-x-full">
-            <div>
-                <img id="sideCover" src="" class="w-full rounded-lg shadow-2xl mb-6 opacity-0">
-                <h3 class="font-display text-2xl mb-2">About this Issue</h3>
-                <p id="sideDesc" class="text-sm text-white/50 leading-relaxed mb-6">
-                    Dive into the latest editorial features and exclusive interviews in this premium digital edition.
-                </p>
-                <div class="space-y-4">
-                    <div class="flex justify-between text-xs border-b border-white/5 pb-2">
-                        <span class="text-white/30">Release</span>
-                        <span id="sideDate" class="text-amber-500 font-mono">--</span>
-                    </div>
-                    <div class="flex justify-between text-xs border-b border-white/5 pb-2">
-                        <span class="text-white/30">Reading Time</span>
-                        <span id="sideTime" class="text-amber-500 font-mono">15 Min</span>
-                    </div>
-                </div>
+    <main id="viewerContainer">
+        <div id="canvasContainer" class="pb-20">
             </div>
-            <p class="text-[10px] text-white/20 uppercase tracking-widest text-center">© MagazineHub Reader v2.0</p>
-        </aside>
     </main>
 
     <script>
-        const API_URL = 'https://magazinetes1.onrender.com';
+        // Use local proxy paths via Netlify _redirects to avoid CORS
+        const API_BASE = ''; 
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        async function initReader() {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
+        let pdfDoc = null;
+        let isHeaderVisible = true;
+        let lastScrollTop = 0;
+
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
 
             if (!id) {
                 window.location.href = 'index.html';
@@ -107,84 +115,92 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/api/magazines`);
-                const magazines = await response.json();
-                const mag = magazines.find(m => m.id == id);
+                const response = await fetch(`/api/magazines`);
+                const mags = await response.json();
+                const mag = mags.find(m => m.id == id);
 
                 if (mag && mag.pdf_path) {
-                    // Update content
                     document.getElementById('readerTitle').innerText = mag.title;
-                    document.getElementById('readerCategory').innerText = mag.category;
-                    document.getElementById('sideDate').innerText = mag.date;
-                    document.getElementById('sideCover').src = mag.cover.startsWith('http') ? mag.cover : `${API_URL}${mag.cover}`;
-                    
-                    // Set PDF Source
-                    const pdfFullUrl = `${API_URL}${mag.pdf_path}`;
-                    document.getElementById('pdfViewer').src = pdfFullUrl;
-
-                    // Trigger animations after content is ready
-                    startAnimations();
+                    loadMagazine(mag.pdf_path);
                 } else {
-                    alert("Magazine not found.");
-                    window.location.href = 'index.html';
+                    throw new Error("Magazine file not found");
                 }
-            } catch (error) {
-                console.error("Reader Error:", error);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadStatus').innerText = "Error: File missing or server asleep.";
             }
         }
 
-        function startAnimations() {
-            // Fade out loader
+        async function loadMagazine(path) {
+            try {
+                const loadingTask = pdfjsLib.getDocument(path);
+                
+                loadingTask.onProgress = (p) => {
+                    const percent = Math.round((p.loaded / p.total) * 100);
+                    document.getElementById('loadStatus').innerText = `Downloading Content: ${percent}%`;
+                };
+
+                pdfDoc = await loadingTask.promise;
+                document.getElementById('pageCountDisplay').innerText = `1 of ${pdfDoc.numPages} Pages`;
+
+                const container = document.getElementById('canvasContainer');
+                
+                // Optimized Loop for Mobile
+                for (let n = 1; n <= pdfDoc.numPages; n++) {
+                    await renderPage(n, container);
+                }
+
+                revealUI();
+            } catch (err) {
+                alert("Failed to render PDF. Please try again.");
+            }
+        }
+
+        async function renderPage(num, container) {
+            const page = await pdfDoc.getPage(num);
+            
+            // DYNAMIC SCALING FOR MOBILE
+            const clientWidth = window.innerWidth;
+            const viewportDefault = page.getViewport({ scale: 1 });
+            
+            // On mobile, we match width exactly. On desktop, we use a fixed high-quality scale.
+            let scale = (clientWidth < 768) ? (clientWidth * 0.95) / viewportDefault.width : 1.5;
+            
+            const viewport = page.getViewport({ scale: scale });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            // High DPI Support (Retina Screens)
+            const dpr = window.devicePixelRatio || 1;
+            canvas.height = viewport.height * dpr;
+            canvas.width = viewport.width * dpr;
+            canvas.style.width = viewport.width + "px";
+            canvas.style.height = viewport.height + "px";
+            context.scale(dpr, dpr);
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            
+            canvas.className = 'magazine-page opacity-0 transition-opacity duration-1000';
+            container.appendChild(canvas);
+            
+            // Trigger fade in for each page
+            setTimeout(() => canvas.classList.remove('opacity-0'), 100);
+        }
+
+        function revealUI() {
             anime({
-                targets: '#loadingOverlay',
+                targets: '#loadingScreen',
                 opacity: 0,
                 duration: 1000,
                 easing: 'easeInOutQuad',
-                complete: () => {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                }
+                complete: () => document.getElementById('loadingScreen').style.display = 'none'
             });
 
-            // Slide in Header info
             anime({
-                targets: ['#readerTitle', '#readerCategory'],
-                translateY: [20, 0],
+                targets: '#readerTitle, #pageCountDisplay',
+                translateY: [10, 0],
                 opacity: [0, 1],
-                delay: anime.stagger(100),
-                easing: 'easeOutExpo'
-            });
-
-            // Reveal Reader
-            anime({
-                targets: '#readerWrapper',
-                opacity: [0, 1],
-                scale: [0.98, 1],
-                duration: 1500,
-                easing: 'easeOutExpo'
-            });
-
-            // Slide in Sidebar
-            anime({
-                targets: '#infoSidebar',
-                translateX: ['100%', '0%'],
-                duration: 1200,
-                easing: 'easeOutElastic(1, .8)'
-            });
-
-            anime({
-                targets: '#sideCover',
-                opacity: [0, 1],
-                scale: [0.8, 1],
-                delay: 800,
-                duration: 1000
-            });
-
-            // Fake progress bar animation (PDFs load in chunks)
-            anime({
-                targets: '#progressBar',
-                width: ['0%', '100%'],
-                duration: 3000,
-                easing: 'easeInOutQuad'
+                delay: anime.stagger(100)
             });
         }
 
@@ -192,23 +208,23 @@
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                document.exitFullscreen();
             }
         }
 
-        // Auto-hide header on scroll-like movement or timer
-        let headerTimeout;
-        document.addEventListener('mousemove', () => {
-            document.getElementById('readerHeader').classList.remove('hide-header');
-            clearTimeout(headerTimeout);
-            headerTimeout = setTimeout(() => {
-                document.getElementById('readerHeader').classList.add('hide-header');
-            }, 3000);
+        // Mobile Header Toggle Logic
+        const viewer = document.getElementById('viewerContainer');
+        viewer.addEventListener('scroll', () => {
+            let st = viewer.scrollTop;
+            if (st > lastScrollTop && st > 100) {
+                document.getElementById('readerHeader').classList.add('header-hidden');
+            } else {
+                document.getElementById('readerHeader').classList.remove('header-hidden');
+            }
+            lastScrollTop = st;
         });
 
-        window.onload = initReader;
+        window.onload = init;
     </script>
 </body>
 </html>
