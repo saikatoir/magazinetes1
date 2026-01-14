@@ -3,23 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reader - MagazineHub</title>
+    <title>MagazineHub Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        .reader-container { height: calc(100- 4rem); }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; background-color: #0f172a; }
+        .font-display { font-family: 'Playfair Display', serif; }
+        
+        /* Smooth transition for the header */
+        #readerHeader { transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+        .hide-header { transform: translateY(-100%); }
+
+        /* Custom scrollbar for the PDF area */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #d4a574; border-radius: 10px; }
+
+        .loader-ring {
+            border: 3px solid rgba(212, 165, 116, 0.2);
+            border-top: 3px solid #d4a574;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-gray-900 overflow-hidden">
-    <nav class="h-16 bg-white flex items-center justify-between px-6 shadow-md">
-        <div class="flex items-center gap-4">
-            <a href="index.html" class="text-gray-600 hover:text-amber-500">← Back</a>
-            <h1 id="readerTitle" class="font-bold text-lg">Loading Magazine...</h1>
+<body class="text-white">
+
+    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-white/10 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-6">
+            <a href="index.html" class="flex items-center text-white/70 hover:text-amber-400 transition-colors group">
+                <span class="mr-2 transform group-hover:-translate-x-1 transition-transform">←</span>
+                Back to Library
+            </a>
+            <div class="h-6 w-px bg-white/20"></div>
+            <div>
+                <h1 id="readerTitle" class="font-display text-lg font-bold tracking-tight opacity-0">Loading...</h1>
+                <p id="readerCategory" class="text-[10px] uppercase tracking-[0.2em] text-amber-500 font-bold opacity-0"></p>
+            </div>
         </div>
-        <div id="magazineInfo" class="text-sm text-gray-500">Digital Edition</div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="toggleFullScreen()" class="p-2 hover:bg-white/10 rounded-lg transition-all title="Full Screen">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+            <button class="bg-amber-500 hover:bg-amber-600 text-black font-bold px-4 py-2 rounded-md text-sm transition-all shadow-lg shadow-amber-500/20">
+                Share Issue
+            </button>
+        </div>
     </nav>
 
-    <main class="reader-container w-full bg-gray-800" style="height: 100vh;">
-        <iframe id="pdfViewer" src="" class="w-full h-full border-none"></iframe>
+    <div class="fixed top-16 left-0 w-full h-0.5 bg-white/5 z-50">
+        <div id="progressBar" class="h-full bg-amber-500 w-0 transition-all duration-300"></div>
+    </div>
+
+    <main class="relative w-full h-screen pt-16 flex bg-slate-950">
+        
+        <div id="loadingOverlay" class="absolute inset-0 z-40 bg-slate-950 flex flex-col items-center justify-center transition-opacity duration-500">
+            <div class="loader-ring mb-4"></div>
+            <p class="text-amber-500/50 text-xs font-mono tracking-widest uppercase">Preparing Digital Edition</p>
+        </div>
+
+        <div id="readerWrapper" class="flex-1 relative opacity-0">
+            <iframe id="pdfViewer" src="" class="w-full h-full border-none shadow-2xl"></iframe>
+        </div>
+
+        <aside id="infoSidebar" class="hidden xl:flex w-80 border-l border-white/5 p-8 flex-col justify-between bg-slate-900/50 transform translate-x-full">
+            <div>
+                <img id="sideCover" src="" class="w-full rounded-lg shadow-2xl mb-6 opacity-0">
+                <h3 class="font-display text-2xl mb-2">About this Issue</h3>
+                <p id="sideDesc" class="text-sm text-white/50 leading-relaxed mb-6">
+                    Dive into the latest editorial features and exclusive interviews in this premium digital edition.
+                </p>
+                <div class="space-y-4">
+                    <div class="flex justify-between text-xs border-b border-white/5 pb-2">
+                        <span class="text-white/30">Release</span>
+                        <span id="sideDate" class="text-amber-500 font-mono">--</span>
+                    </div>
+                    <div class="flex justify-between text-xs border-b border-white/5 pb-2">
+                        <span class="text-white/30">Reading Time</span>
+                        <span id="sideTime" class="text-amber-500 font-mono">15 Min</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[10px] text-white/20 uppercase tracking-widest text-center">© MagazineHub Reader v2.0</p>
+        </aside>
     </main>
 
     <script>
@@ -30,7 +102,6 @@
             const id = params.get('id');
 
             if (!id) {
-                alert("No magazine selected!");
                 window.location.href = 'index.html';
                 return;
             }
@@ -41,18 +112,101 @@
                 const mag = magazines.find(m => m.id == id);
 
                 if (mag && mag.pdf_path) {
+                    // Update content
                     document.getElementById('readerTitle').innerText = mag.title;
-                    // Connect the Render URL to the saved PDF path
+                    document.getElementById('readerCategory').innerText = mag.category;
+                    document.getElementById('sideDate').innerText = mag.date;
+                    document.getElementById('sideCover').src = mag.cover.startsWith('http') ? mag.cover : `${API_URL}${mag.cover}`;
+                    
+                    // Set PDF Source
                     const pdfFullUrl = `${API_URL}${mag.pdf_path}`;
                     document.getElementById('pdfViewer').src = pdfFullUrl;
+
+                    // Trigger animations after content is ready
+                    startAnimations();
                 } else {
-                    document.getElementById('readerTitle').innerText = "File Not Found";
-                    alert("This magazine has no PDF or was removed during a server restart.");
+                    alert("Magazine not found.");
+                    window.location.href = 'index.html';
                 }
             } catch (error) {
                 console.error("Reader Error:", error);
             }
         }
+
+        function startAnimations() {
+            // Fade out loader
+            anime({
+                targets: '#loadingOverlay',
+                opacity: 0,
+                duration: 1000,
+                easing: 'easeInOutQuad',
+                complete: () => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                }
+            });
+
+            // Slide in Header info
+            anime({
+                targets: ['#readerTitle', '#readerCategory'],
+                translateY: [20, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                easing: 'easeOutExpo'
+            });
+
+            // Reveal Reader
+            anime({
+                targets: '#readerWrapper',
+                opacity: [0, 1],
+                scale: [0.98, 1],
+                duration: 1500,
+                easing: 'easeOutExpo'
+            });
+
+            // Slide in Sidebar
+            anime({
+                targets: '#infoSidebar',
+                translateX: ['100%', '0%'],
+                duration: 1200,
+                easing: 'easeOutElastic(1, .8)'
+            });
+
+            anime({
+                targets: '#sideCover',
+                opacity: [0, 1],
+                scale: [0.8, 1],
+                delay: 800,
+                duration: 1000
+            });
+
+            // Fake progress bar animation (PDFs load in chunks)
+            anime({
+                targets: '#progressBar',
+                width: ['0%', '100%'],
+                duration: 3000,
+                easing: 'easeInOutQuad'
+            });
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Auto-hide header on scroll-like movement or timer
+        let headerTimeout;
+        document.addEventListener('mousemove', () => {
+            document.getElementById('readerHeader').classList.remove('hide-header');
+            clearTimeout(headerTimeout);
+            headerTimeout = setTimeout(() => {
+                document.getElementById('readerHeader').classList.add('hide-header');
+            }, 3000);
+        });
 
         window.onload = initReader;
     </script>
