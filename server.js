@@ -14,6 +14,7 @@ app.use(cors({
     origin: 'https://magazinetest.netlify.app', // Your actual Netlify link
     credentials: true // Important for cookies/sessions to work
 }));
+const PORT = 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
