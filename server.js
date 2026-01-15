@@ -100,20 +100,68 @@ const requireAdmin = (req, res, next) => {
 // 5. Upload New Magazine (Admin Only)
 // Inside server.js - Update the POST route
 app.post('/api/magazines', requireAdmin, upload.fields([{ name: 'cover', maxCount: 1 }, { name: 'pdf', maxCount: 1 }]), (req, res) => {
-    const { title, category, date, readingTime, description, tags, is_discover } = req.body;
+    const { 
+        title, 
+        category, 
+        date, 
+        readingTime, 
+        description, 
+        tags, 
+        is_discover,
+        price,      // Added Price
+        discount    // Added Discount %
+    } = req.body;
     
+    // Handle File Paths
     const coverPath = req.files['cover'] ? '/uploads/' + req.files['cover'][0].filename : 'resources/mag-covers/default.jpg';
     const pdfPath = req.files['pdf'] ? '/uploads/' + req.files['pdf'][0].filename : null;
 
-    // Save is_discover (ensure it's treated as an integer 0 or 1)
+    // Data Parsing & Defaults
     const showInDiscover = parseInt(is_discover) || 0;
+    const magPrice = parseFloat(price) || 0.0;
+    const magDiscount = parseInt(discount) || 0;
+    const magReadingTime = readingTime || '15 min';
 
-    const stmt = db.prepare(`INSERT INTO magazines (title, category, cover, pdf_path, date, readingTime, rating, description, tags, is_discover) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    // SQL Statement with Price and Discount columns
+    const query = `
+        INSERT INTO magazines (
+            title, 
+            category, 
+            cover, 
+            pdf_path, 
+            date, 
+            readingTime, 
+            rating, 
+            description, 
+            tags, 
+            is_discover,
+            price, 
+            discount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const stmt = db.prepare(query);
     
-    stmt.run(title, category, coverPath, pdfPath, date, readingTime, 5.0, description, tags, showInDiscover, function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, id: this.lastID });
-    });
+    stmt.run(
+        title, 
+        category, // Will be "Bangladeshi" or "International"
+        coverPath, 
+        pdfPath, 
+        date, 
+        magReadingTime, 
+        5.0, 
+        description, 
+        tags, 
+        showInDiscover,
+        magPrice, 
+        magDiscount, 
+        function(err) {
+            if (err) {
+                console.error("DB Upload Error:", err.message);
+                return res.status(500).json({ error: "Database failed to save magazine." });
+            }
+            res.json({ success: true, id: this.lastID });
+        }
+    );
     stmt.finalize();
 });
 
@@ -129,7 +177,4 @@ app.delete('/api/magazines/:id', requireAdmin, (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
-
-
-
 
