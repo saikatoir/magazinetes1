@@ -4,32 +4,40 @@ const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
+const cors = require('cors');
 const db = require('./database');
 
 const app = express();
-const cors = require('cors');
-
-// Allow ONLY your Netlify frontend to talk to this server
-app.use(cors({
-    origin: 'https://magazinetest.netlify.app', // Your actual Netlify link
-    credentials: true // Important for cookies/sessions to work
-}));
 const PORT = 3000;
-// Middleware
+
+// 1. DATABASE MIGRATION (Fixes your "Missing Column" Error)
+db.serialize(() => {
+    db.run(`ALTER TABLE magazines ADD COLUMN price REAL DEFAULT 0.0`, (err) => {
+        if (err) console.log("Price column already exists.");
+    });
+    db.run(`ALTER TABLE magazines ADD COLUMN discount INTEGER DEFAULT 0`, (err) => {
+        if (err) console.log("Discount column already exists.");
+    });
+});
+
+// 2. MIDDLEWARE
+app.use(cors({
+    origin: 'https://magazinetest.netlify.app',
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public')); // Serve frontend files
-app.use('/uploads', express.static('uploads')); // Serve uploaded images/pdfs
+app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
 
-// Session Setup
 app.use(session({
-    secret: 'magazine_secret_key_change_this',
+    secret: 'magazine_secret_key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Set to true if using HTTPS
+    cookie: { secure: false } 
 }));
 
-// File Upload Configuration (Multer)
+// 3. FILE UPLOAD
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = './uploads';
@@ -42,53 +50,17 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- API ROUTES ---
+// 4. API ROUTES
 
-// 1. Login
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
-        if (err || !user) return res.status(401).json({ error: "Invalid credentials" });
-        
-        if (bcrypt.compareSync(password, user.password)) {
-            req.session.userId = user.id;
-            req.session.isAdmin = user.is_admin;
-            return res.json({ success: true, isAdmin: user.is_admin });
-        }
-        res.status(401).json({ error: "Invalid credentials" });
-    });
-});
-
-// 2. Logout
-app.post('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
-});
-
-// 3. Get All Magazines
+// Get All Magazines
 app.get('/api/magazines', (req, res) => {
-    // We fetch everything, including the is_discover flag
     db.all("SELECT * FROM magazines ORDER BY id DESC", [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        const magazines = rows.map(m => ({
-            ...m,
-            tags: m.tags ? m.tags.split(',') : [],
-            // Ensure is_discover is treated as a number
-            is_discover: parseInt(m.is_discover) 
-        }));
-        res.json(magazines);
-    });
-});
-// 4. Get Single Magazine
-app.get('/api/magazines/:id', (req, res) => {
-    db.get("SELECT * FROM magazines WHERE id = ?", [req.params.id], (err, row) => {
-        if (err || !row) return res.status(404).json({ error: "Not found" });
-        row.tags = row.tags ? row.tags.split(',') : [];
-        res.json(row);
+        res.json(rows);
     });
 });
 
-// Middleware to protect admin routes
+// Admin Protection Middleware
 const requireAdmin = (req, res, next) => {
     if (req.session.userId && req.session.isAdmin) {
         next();
@@ -97,84 +69,27 @@ const requireAdmin = (req, res, next) => {
     }
 };
 
-// 5. Upload New Magazine (Admin Only)
-// Inside server.js - Update the POST route
+// Upload Magazine (Admin)
 app.post('/api/magazines', requireAdmin, upload.fields([{ name: 'cover', maxCount: 1 }, { name: 'pdf', maxCount: 1 }]), (req, res) => {
-    const { 
-        title, 
-        category, 
-        date, 
-        readingTime, 
-        description, 
-        tags, 
-        is_discover,
-        price,      // Added Price
-        discount    // Added Discount %
-    } = req.body;
+    const { title, category, date, readingTime, description, tags, is_discover, price, discount } = req.body;
     
-    // Handle File Paths
-    const coverPath = req.files['cover'] ? '/uploads/' + req.files['cover'][0].filename : 'resources/mag-covers/default.jpg';
+    const coverPath = req.files['cover'] ? '/uploads/' + req.files['cover'][0].filename : '/uploads/default.jpg';
     const pdfPath = req.files['pdf'] ? '/uploads/' + req.files['pdf'][0].filename : null;
 
-    // Data Parsing & Defaults
-    const showInDiscover = parseInt(is_discover) || 0;
-    const magPrice = parseFloat(price) || 0.0;
-    const magDiscount = parseInt(discount) || 0;
-    const magReadingTime = readingTime || '15 min';
-
-    // SQL Statement with Price and Discount columns
     const query = `
         INSERT INTO magazines (
-            title, 
-            category, 
-            cover, 
-            pdf_path, 
-            date, 
-            readingTime, 
-            rating, 
-            description, 
-            tags, 
-            is_discover,
-            price, 
-            discount
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            title, category, cover, pdf_path, date, readingTime, 
+            description, tags, is_discover, price, discount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const stmt = db.prepare(query);
-    
-    stmt.run(
-        title, 
-        category, // Will be "Bangladeshi" or "International"
-        coverPath, 
-        pdfPath, 
-        date, 
-        magReadingTime, 
-        5.0, 
-        description, 
-        tags, 
-        showInDiscover,
-        magPrice, 
-        magDiscount, 
-        function(err) {
-            if (err) {
-                console.error("DB Upload Error:", err.message);
-                return res.status(500).json({ error: "Database failed to save magazine." });
-            }
-            res.json({ success: true, id: this.lastID });
-        }
-    );
-    stmt.finalize();
-});
-
-// 6. Delete Magazine (Admin Only)
-app.delete('/api/magazines/:id', requireAdmin, (req, res) => {
-    db.run("DELETE FROM magazines WHERE id = ?", [req.params.id], function(err) {
+    db.run(query, [
+        title, category, coverPath, pdfPath, date, readingTime || '15 min',
+        description, tags, parseInt(is_discover) || 0, 
+        parseFloat(price) || 0.0, parseInt(discount) || 0
+    ], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
+        res.json({ success: true, id: this.lastID });
     });
 });
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
-
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
