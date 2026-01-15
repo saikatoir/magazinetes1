@@ -6,11 +6,16 @@
     <title>Admin Dashboard - MagazineHub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>body{font-family: 'Inter', sans-serif; background:#f8fafc}</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .input-focus { outline: none; transition: all 0.2s; }
+        .input-focus:focus { border-color: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+    </style>
 </head>
 <body class="min-h-screen">
     <div class="max-w-4xl mx-auto py-12 px-4">
         <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+            
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-2xl font-semibold text-gray-800">Admin Dashboard</h1>
@@ -20,68 +25,90 @@
             </div>
 
             <form id="uploadForm" class="space-y-6" enctype="multipart/form-data">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Magazine Title</label>
-                    <input id="title" name="title" class="w-full border border-gray-200 px-4 py-2 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" placeholder="e.g. Modern Architecture" required>
-                </div>
-
-                <div class="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                    <input type="checkbox" id="is_discover" name="is_discover" checked class="w-5 h-5 text-amber-500 rounded border-gray-300 focus:ring-amber-500">
-                    <div>
-                        <label for="is_discover" class="text-sm font-semibold text-amber-900">Show in Discover Section</label>
-                        <p class="text-xs text-amber-700">Turn this off to keep the magazine hidden from the main home page grid.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Magazine Title</label>
+                        <input id="title" name="title" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus" placeholder="e.g. Modern Architecture" required>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select id="category" name="category" class="w-full border border-gray-200 px-3 py-2 rounded-lg outline-none">
-                            <option value="fashion">Fashion</option>
-                            <option value="technology">Technology</option>
-                            <option value="travel">Travel</option>
-                            <option value="food">Food</option>
-                            <option value="business">Business</option>
-                            <option value="science">Science</option>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Region Category</label>
+                        <select id="category" name="category" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus">
+                            <option value="Bangladeshi">Bangladeshi</option>
+                            <option value="International">International</option>
                         </select>
                     </div>
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Publication Date</label>
-                        <input id="date" name="date" class="w-full border border-gray-200 px-3 py-2 rounded-lg" placeholder="e.g. June 2024">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Content Genre</label>
+                        <select id="genre" name="genre" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus">
+                            <option value="Fashion">Fashion</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Business">Business</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Lifestyle">Lifestyle</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Price ($)</label>
+                            <input type="number" id="price" name="price" step="0.01" value="0.00" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Discount (%)</label>
+                            <input type="number" id="discount" name="discount" value="0" min="0" max="100" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="is_discover" name="is_discover" checked class="w-5 h-5 text-amber-500 rounded border-gray-300 focus:ring-amber-500">
+                        <div>
+                            <label for="is_discover" class="text-sm font-semibold text-gray-700">Show in Discover Section</label>
+                            <p class="text-[10px] text-gray-500 uppercase">Visible on home page</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Publication Date</label>
+                        <input id="date" name="date" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus" placeholder="e.g. June 2024">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Reading Time</label>
-                        <input id="readingTime" name="readingTime" class="w-full border border-gray-200 px-3 py-2 rounded-lg" placeholder="e.g. 15 min">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Reading Time</label>
+                        <input id="readingTime" name="readingTime" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus" placeholder="e.g. 15 min">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea id="description" name="description" class="w-full border border-gray-200 px-4 py-2 rounded-lg outline-none" rows="3" placeholder="Brief summary of the magazine..."></textarea>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Description</label>
+                    <textarea id="description" name="description" class="w-full border border-gray-200 px-4 py-2 rounded-lg input-focus" rows="2" placeholder="Brief summary..."></textarea>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="p-4 border-2 border-dashed border-gray-200 rounded-lg">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cover Image (JPG/PNG)</label>
-                        <input id="cover" name="cover" type="file" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                    <div class="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-amber-300 transition-colors">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2 text-center">Cover Image</label>
+                        <input id="cover" name="cover" type="file" accept="image/*" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700">
                     </div>
-                    <div class="p-4 border-2 border-dashed border-gray-200 rounded-lg">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Magazine PDF (Required)</label>
-                        <input id="pdf" name="pdf" type="file" accept="application/pdf" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <div class="p-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2 text-center">Magazine PDF</label>
+                        <input id="pdf" name="pdf" type="file" accept="application/pdf" class="text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700">
                     </div>
                 </div>
 
-                <div class="flex justify-end pt-4">
-                    <button type="submit" class="w-full md:w-auto px-8 py-3 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 shadow-md shadow-amber-200 transition">
-                        Upload Magazine
-                    </button>
-                </div>
+                <button type="submit" id="submitBtn" class="w-full py-4 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 shadow-lg shadow-amber-100 transition-all">
+                    Upload Magazine
+                </button>
             </form>
 
             <div class="mt-12 border-t border-gray-100 pt-8">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800">Manage Magazines</h2>
-                    <span id="magCount" class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded-full">0 TOTAL</span>
+                    <h2 class="text-xl font-semibold text-gray-800">Manage Collection</h2>
+                    <span id="magCount" class="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full uppercase tracking-tighter">0 Magazines</span>
                 </div>
                 <div id="magList" class="space-y-3">
                     </div>
@@ -92,115 +119,102 @@
     <script>
         const uploadForm = document.getElementById('uploadForm');
         const magList = document.getElementById('magList');
+        const submitBtn = document.getElementById('submitBtn');
 
-        // LOAD MAGAZINES
         async function loadMagazines() {
             try {
                 const res = await fetch('/api/magazines');
                 const mags = await res.json();
                 
-                document.getElementById('magCount').textContent = `${mags.length} TOTAL`;
-                magList.innerHTML = '';
-                
-                if (mags.length === 0) {
-                    magList.innerHTML = '<div class="text-center py-8 text-gray-400 italic">No magazines uploaded yet.</div>';
-                    return;
-                }
+                document.getElementById('magCount').textContent = `${mags.length} Magazines`;
+                magList.innerHTML = mags.length === 0 ? 
+                    '<div class="text-center py-8 text-gray-400 italic">No magazines uploaded yet.</div>' : '';
 
                 mags.forEach(m => {
                     const isShown = m.is_discover !== 0;
+                    const price = Number(m.price || 0).toFixed(2);
+                    const discount = m.discount || 0;
+
                     const div = document.createElement('div');
-                    div.className = 'flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-white rounded-lg border border-gray-100 hover:border-amber-200 transition';
+                    div.className = 'flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all';
                     div.innerHTML = `
-                        <div class="flex items-center space-x-4 mb-3 md:mb-0">
-                            <img src="${m.cover}" class="w-12 h-16 object-cover rounded shadow-sm">
+                        <div class="flex items-center space-x-4">
+                            <img src="${m.cover}" class="w-10 h-14 object-cover rounded shadow-sm">
                             <div>
-                                <div class="font-semibold text-gray-800">${m.title}</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-wider">${m.category} • ${m.date || 'No Date'}</div>
-                                <div class="mt-1">
-                                    <span class="text-[10px] px-2 py-0.5 rounded-full ${isShown ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
-                                        ${isShown ? '● Visible in Discover' : '○ Hidden from Discover'}
-                                    </span>
-                                </div>
+                                <h4 class="font-bold text-gray-800 leading-tight">${m.title}</h4>
+                                <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+                                    ${m.category} • $${price} (${discount}% OFF)
+                                </p>
+                                <span class="text-[9px] px-2 py-0.5 rounded-full ${isShown ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                                    ${isShown ? 'Visible' : 'Hidden'}
+                                </span>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2 w-full md:w-auto">
-                            <button onclick="deleteMag(${m.id})" class="flex-1 md:flex-none text-red-500 hover:bg-red-50 text-sm font-medium px-4 py-2 border border-red-100 rounded-lg transition">
-                                Delete
-                            </button>
-                        </div>
+                        <button onclick="deleteMag(${m.id})" class="p-2 text-red-400 hover:bg-red-50 rounded-lg transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
                     `;
                     magList.appendChild(div);
                 });
-            } catch (err) {
-                console.error("Error loading magazines:", err);
-            }
+            } catch (err) { console.error("Load error:", err); }
         }
 
-        // UPLOAD MAGAZINE
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
             
             const formData = new FormData(this);
             
-            // Explicitly set the is_discover value from the checkbox
-            const isDiscoverChecked = document.getElementById('is_discover').checked ? 1 : 0;
-            formData.set('is_discover', isDiscoverChecked);
+            // Explicitly ensure numeric types for price and discount
+            formData.set('price', document.getElementById('price').value);
+            formData.set('discount', document.getElementById('discount').value);
+            formData.set('is_discover', document.getElementById('is_discover').checked ? 1 : 0);
 
-            // Add automated date if user left it blank
+            // Handle empty date
             if (!document.getElementById('date').value) {
                 const autoDate = new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'});
                 formData.set('date', autoDate);
             }
 
             try {
-                const res = await fetch('/api/magazines', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const res = await fetch('/api/magazines', { method: 'POST', body: formData });
+                
                 if (res.status === 401 || res.status === 403) {
-                    alert("Unauthorized. Please login again.");
                     window.location.href = 'signin.html';
                     return;
                 }
 
                 const data = await res.json();
                 if (data.success) {
-                    alert('Magazine uploaded successfully!');
+                    alert('Magazine uploaded!');
                     uploadForm.reset();
                     loadMagazines();
                 } else {
-                    alert('Error: ' + (data.error || 'Check server logs'));
+                    alert('Error: ' + data.error);
                 }
             } catch(err) {
-                alert('Connection error. Is the server running?');
+                alert('Connection error.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Magazine';
             }
         });
 
-        // DELETE MAGAZINE
         async function deleteMag(id) {
-            if(!confirm('This will permanently delete this magazine. Continue?')) return;
+            if(!confirm('Delete permanently?')) return;
             try {
                 const res = await fetch(`/api/magazines/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    loadMagazines();
-                } else {
-                    alert('Delete failed. Session may have expired.');
-                    window.location.href = 'signin.html';
-                }
-            } catch (err) {
-                alert('Error connecting to server.');
-            }
+                if (res.ok) loadMagazines();
+                else alert('Delete failed.');
+            } catch (err) { alert('Error.'); }
         }
 
-        // LOGOUT
         document.getElementById('logoutBtn').addEventListener('click', async () => {
             await fetch('/api/logout', { method: 'POST' });
             window.location.href = 'signin.html';
         });
 
-        // Init
         loadMagazines();
     </script>
 </body>
