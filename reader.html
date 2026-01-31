@@ -20,34 +20,43 @@
         }
         .font-display { font-family: 'Playfair Display', serif; }
         
-        /* Viewer Logic */
         #viewerContainer {
             height: 100vh;
             overflow-y: auto;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
-            padding-top: 64px; /* Space for header */
+            padding-top: 64px;
         }
 
-        /* Canvas Security & Mobile Styling */
+        /* Placeholder style to prevent layout shift */
+        .page-slot {
+            margin: 20px auto;
+            background: rgba(255,255,255,0.03);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 95%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.1);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         canvas {
             display: block;
-            margin: 20px auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            max-width: 95% !important;
+            max-width: 100% !important;
             height: auto !important;
             user-select: none;
             -webkit-user-select: none;
         }
 
-        /* Header UI */
         #readerHeader { 
             transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 100;
         }
         .header-hidden { transform: translateY(-100%); }
 
-        /* Loader */
         .loader-ring {
             border: 2px solid rgba(245, 158, 11, 0.1);
             border-top: 2px solid #f59e0b;
@@ -57,19 +66,6 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Page Placeholder */
-        .page-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        .page-placeholder.loaded {
-            opacity: 1;
-        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -82,20 +78,15 @@
                 </svg>
             </a>
             <div>
-                <h1 id="readerTitle" class="text-white font-semibold text-sm md:text-base truncate max-w-[150px] md:max-w-md">Loading Edition...</h1>
+                <h1 id="readerTitle" class="text-white font-semibold text-sm md:text-base truncate max-w-[150px] md:max-w-md">Loading...</h1>
                 <p id="pageCountDisplay" class="text-amber-500 text-[10px] uppercase tracking-widest font-bold">Initializing</p>
             </div>
         </div>
-
-        <div class="flex items-center gap-2">
-            <button onclick="toggleFullScreen()" class="p-2 text-white/60 hover:text-white transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-            </button>
-            <div class="hidden md:block h-6 w-px bg-white/10 mx-2"></div>
-            <span class="hidden md:inline-block text-[10px] text-white/40 font-mono uppercase">Secure Stream</span>
-        </div>
+        <button onclick="toggleFullScreen()" class="p-2 text-white/60 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+        </button>
     </nav>
 
     <div id="loadingScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center text-center px-6">
@@ -105,44 +96,43 @@
     </div>
 
     <main id="viewerContainer">
-        <div id="canvasContainer" class="pb-20">
-            <!-- Page canvases and placeholders will be injected here -->
-        </div>
+        <div id="canvasContainer" class="pb-20"></div>
     </main>
 
     <script>
-        // Use local proxy paths via Netlify _redirects to avoid CORS
-        const API_BASE = ''; 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         let pdfDoc = null;
-        let isHeaderVisible = true;
         let lastScrollTop = 0;
-        let pageElements = [];
-        let currentPage = 1;
+        const container = document.getElementById('canvasContainer');
+
+        // Observer logic: Render page when it enters viewport
+        const observerOptions = { root: document.getElementById('viewerContainer'), rootMargin: '500px 0px', threshold: 0.1 };
+        const pageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const pageNum = parseInt(entry.target.dataset.pagenum);
+                    renderPage(pageNum, entry.target);
+                    pageObserver.unobserve(entry.target); // Only render once
+                }
+            });
+        }, observerOptions);
 
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
-
-            if (!id) {
-                window.location.href = 'index.html';
-                return;
-            }
+            if (!id) { window.location.href = 'index.html'; return; }
 
             try {
                 const response = await fetch(`/api/magazines`);
                 const mags = await response.json();
                 const mag = mags.find(m => m.id == id);
 
-                if (mag && mag.pdf_path) {
+                if (mag?.pdf_path) {
                     document.getElementById('readerTitle').innerText = mag.title;
                     loadMagazine(mag.pdf_path);
-                } else {
-                    throw new Error("Magazine file not found");
-                }
+                } else { throw new Error("File missing"); }
             } catch (err) {
-                console.error(err);
                 document.getElementById('loadStatus').innerText = "Error: File missing or server asleep.";
             }
         }
@@ -151,104 +141,89 @@
             try {
                 const loadingTask = pdfjsLib.getDocument(path);
                 loadingTask.onProgress = (p) => {
-                    const percent = Math.round((p.loaded / p.total) * 100);
-                    document.getElementById('loadStatus').innerText = `Downloading Content: ${percent}%`;
+                    const percent = Math.round((p.loaded / (p.total || 1)) * 100);
+                    document.getElementById('loadStatus').innerText = `Downloading: ${percent}%`;
                 };
+
                 pdfDoc = await loadingTask.promise;
-                document.getElementById('pageCountDisplay').innerText = `1 of ${pdfDoc.numPages} Pages`;
+                document.getElementById('pageCountDisplay').innerText = `Total ${pdfDoc.numPages} Pages`;
 
-                const container = document.getElementById('canvasContainer');
-                pageElements = [];
+                // 1. Get first page to calculate aspect ratio
+                const firstPage = await pdfDoc.getPage(1);
+                const viewport = firstPage.getViewport({ scale: 1 });
+                const aspectRatio = viewport.height / viewport.width;
 
-                // Create placeholders for all pages
+                // 2. Create placeholders for ALL pages immediately (very fast)
                 for (let n = 1; n <= pdfDoc.numPages; n++) {
-                    const pageDiv = document.createElement('div');
-                    pageDiv.className = 'page-placeholder flex items-center justify-center min-h-[300px]';
-                    pageDiv.dataset.pageNum = n;
-                    if (n === 1) {
-                        // Render first page immediately
-                        await renderPage(n, pageDiv);
-                    } else {
-                        // Loader placeholder for other pages
-                        pageDiv.innerHTML = `<div class="loader-ring"></div>`;
-                    }
-                    container.appendChild(pageDiv);
-                    pageElements.push(pageDiv);
+                    const slot = document.createElement('div');
+                    slot.className = 'page-slot';
+                    slot.dataset.pagenum = n;
+                    // Pre-calculate height to prevent layout jump
+                    const slotWidth = Math.min(window.innerWidth * 0.95, viewport.width * 1.5);
+                    slot.style.width = `${slotWidth}px`;
+                    slot.style.height = `${slotWidth * aspectRatio}px`;
+                    slot.innerHTML = `<span>Page ${n}</span>`;
+                    
+                    container.appendChild(slot);
+                    pageObserver.observe(slot);
                 }
 
-                setupLazyRender();
+                // 3. Reveal UI as soon as the structure is ready
                 revealUI();
             } catch (err) {
-                alert("Failed to render PDF. Please try again.");
+                alert("Failed to load document.");
             }
         }
 
-        async function renderPage(num, pageDiv) {
+        async function renderPage(num, targetElement) {
+            // Avoid double rendering
+            if (targetElement.classList.contains('rendered')) return;
+            targetElement.classList.add('rendered');
+
             const page = await pdfDoc.getPage(num);
             const clientWidth = window.innerWidth;
             const viewportDefault = page.getViewport({ scale: 1 });
+            
             let scale = (clientWidth < 768) ? (clientWidth * 0.95) / viewportDefault.width : 1.5;
             const viewport = page.getViewport({ scale: scale });
+            
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             const dpr = window.devicePixelRatio || 1;
+
             canvas.height = viewport.height * dpr;
             canvas.width = viewport.width * dpr;
-            canvas.style.width = viewport.width + "px";
-            canvas.style.height = viewport.height + "px";
+            canvas.style.width = "100%";
+            canvas.style.height = "100%";
             context.scale(dpr, dpr);
+
             await page.render({ canvasContext: context, viewport: viewport }).promise;
-            canvas.className = 'magazine-page opacity-0 transition-opacity duration-1000';
-            pageDiv.innerHTML = '';
-            pageDiv.appendChild(canvas);
-            setTimeout(() => canvas.classList.remove('opacity-0'), 100);
-        }
+            
+            targetElement.innerHTML = ''; // Clear placeholder text
+            canvas.className = 'opacity-0 transition-opacity duration-500';
+            targetElement.appendChild(canvas);
+            
+            // Clean up: Optional, free memory of the page object
+            page.cleanup();
 
-        function setupLazyRender() {
-            const observer = new IntersectionObserver(async (entries) => {
-                for (const entry of entries) {
-                    if (entry.isIntersecting) {
-                        const pageDiv = entry.target;
-                        const num = parseInt(pageDiv.dataset.pageNum);
-                        // Only render if not already rendered
-                        if (!pageDiv.querySelector('canvas')) {
-                            await renderPage(num, pageDiv);
-                        }
-                        currentPage = num;
-                        document.getElementById('pageCountDisplay').innerText = `${currentPage} of ${pdfDoc.numPages} Pages`;
-                    }
-                }
-            }, { root: document.getElementById('viewerContainer'), threshold: 0.2 });
-
-            pageElements.forEach(div => observer.observe(div));
+            setTimeout(() => canvas.classList.remove('opacity-0'), 50);
         }
 
         function revealUI() {
             anime({
                 targets: '#loadingScreen',
                 opacity: 0,
-                duration: 1000,
+                duration: 600,
                 easing: 'easeInOutQuad',
                 complete: () => document.getElementById('loadingScreen').style.display = 'none'
-            });
-
-            anime({
-                targets: '#readerTitle, #pageCountDisplay',
-                translateY: [10, 0],
-                opacity: [0, 1],
-                delay: anime.stagger(100)
             });
         }
 
         function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
         }
 
-        // Mobile Header Toggle Logic
         const viewer = document.getElementById('viewerContainer');
         viewer.addEventListener('scroll', () => {
             let st = viewer.scrollTop;
@@ -258,10 +233,9 @@
                 document.getElementById('readerHeader').classList.remove('header-hidden');
             }
             lastScrollTop = st;
-        });
+        }, { passive: true });
 
         window.onload = init;
     </script>
 </body>
 </html>
-
