@@ -57,6 +57,19 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Page Placeholder */
+        .page-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .page-placeholder.loaded {
+            opacity: 1;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -93,7 +106,8 @@
 
     <main id="viewerContainer">
         <div id="canvasContainer" class="pb-20">
-            </div>
+            <!-- Page canvases and placeholders will be injected here -->
+        </div>
     </main>
 
     <script>
@@ -104,6 +118,8 @@
         let pdfDoc = null;
         let isHeaderVisible = true;
         let lastScrollTop = 0;
+        let pageElements = [];
+        let currentPage = 1;
 
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -134,57 +150,77 @@
         async function loadMagazine(path) {
             try {
                 const loadingTask = pdfjsLib.getDocument(path);
-                
                 loadingTask.onProgress = (p) => {
                     const percent = Math.round((p.loaded / p.total) * 100);
                     document.getElementById('loadStatus').innerText = `Downloading Content: ${percent}%`;
                 };
-
                 pdfDoc = await loadingTask.promise;
                 document.getElementById('pageCountDisplay').innerText = `1 of ${pdfDoc.numPages} Pages`;
 
                 const container = document.getElementById('canvasContainer');
-                
-                // Optimized Loop for Mobile
+                pageElements = [];
+
+                // Create placeholders for all pages
                 for (let n = 1; n <= pdfDoc.numPages; n++) {
-                    await renderPage(n, container);
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page-placeholder flex items-center justify-center min-h-[300px]';
+                    pageDiv.dataset.pageNum = n;
+                    if (n === 1) {
+                        // Render first page immediately
+                        await renderPage(n, pageDiv);
+                    } else {
+                        // Loader placeholder for other pages
+                        pageDiv.innerHTML = `<div class="loader-ring"></div>`;
+                    }
+                    container.appendChild(pageDiv);
+                    pageElements.push(pageDiv);
                 }
 
+                setupLazyRender();
                 revealUI();
             } catch (err) {
                 alert("Failed to render PDF. Please try again.");
             }
         }
 
-        async function renderPage(num, container) {
+        async function renderPage(num, pageDiv) {
             const page = await pdfDoc.getPage(num);
-            
-            // DYNAMIC SCALING FOR MOBILE
             const clientWidth = window.innerWidth;
             const viewportDefault = page.getViewport({ scale: 1 });
-            
-            // On mobile, we match width exactly. On desktop, we use a fixed high-quality scale.
             let scale = (clientWidth < 768) ? (clientWidth * 0.95) / viewportDefault.width : 1.5;
-            
             const viewport = page.getViewport({ scale: scale });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-
-            // High DPI Support (Retina Screens)
             const dpr = window.devicePixelRatio || 1;
             canvas.height = viewport.height * dpr;
             canvas.width = viewport.width * dpr;
             canvas.style.width = viewport.width + "px";
             canvas.style.height = viewport.height + "px";
             context.scale(dpr, dpr);
-
             await page.render({ canvasContext: context, viewport: viewport }).promise;
-            
             canvas.className = 'magazine-page opacity-0 transition-opacity duration-1000';
-            container.appendChild(canvas);
-            
-            // Trigger fade in for each page
+            pageDiv.innerHTML = '';
+            pageDiv.appendChild(canvas);
             setTimeout(() => canvas.classList.remove('opacity-0'), 100);
+        }
+
+        function setupLazyRender() {
+            const observer = new IntersectionObserver(async (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        const pageDiv = entry.target;
+                        const num = parseInt(pageDiv.dataset.pageNum);
+                        // Only render if not already rendered
+                        if (!pageDiv.querySelector('canvas')) {
+                            await renderPage(num, pageDiv);
+                        }
+                        currentPage = num;
+                        document.getElementById('pageCountDisplay').innerText = `${currentPage} of ${pdfDoc.numPages} Pages`;
+                    }
+                }
+            }, { root: document.getElementById('viewerContainer'), threshold: 0.2 });
+
+            pageElements.forEach(div => observer.observe(div));
         }
 
         function revealUI() {
@@ -228,3 +264,4 @@
     </script>
 </body>
 </html>
+
