@@ -20,7 +20,7 @@ db.serialize(() => {
         title TEXT,
 
 
-        
+
         category TEXT,
         cover TEXT,
         pdf_path TEXT,
@@ -43,12 +43,12 @@ db.serialize(() => {
     });
 
     // Create Default Admin (admin / admin123)
-    db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
+    db.get("SELECT * FROM users WHERE username = 'adminacces'", (err, row) => {
         if (!row) {
-            const hash = bcrypt.hashSync('admin123', 10);
+            const hash = bcrypt.hashSync('admin#123', 10);
             db.run("INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)", 
-                ['admin', hash, 1]);
-            console.log("Default admin account created: admin / admin123");
+                ['adminacces', hash, 1]);
+            console.log("Default admin account created: adminacces / admin#123");
         }
     });
 });
