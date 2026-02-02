@@ -3,44 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MagazineHub | Premium Reader</title>
+    <title>Neural_Reader | MagazineHub</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --brand-teal: #62D2B3;
+            --brand-deep: #12121A;
+            --brand-lavender: #8B9BE1;
+        }
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #020617; 
-            overflow: hidden; 
-            margin: 0;
+            background-color: var(--brand-deep); 
+            color: #F9EBE0;
+            overflow: hidden; margin: 0;
             -webkit-tap-highlight-color: transparent;
         }
-        .font-display { font-family: 'Playfair Display', serif; }
         
         #viewerContainer {
             height: 100vh;
             overflow-y: auto;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
-            padding-top: 64px;
+            padding-top: 80px;
+            background-image: radial-gradient(circle at center, #1a1a2e 0%, #12121a 100%);
         }
 
-        /* Placeholder style to prevent layout shift */
+        /* Neural Placeholder */
         .page-slot {
-            margin: 20px auto;
-            background: rgba(255,255,255,0.03);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            margin: 40px auto;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(98, 210, 179, 0.05);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
             max-width: 95%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,255,255,0.1);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            position: relative;
+        }
+        .page-slot::before {
+            content: "DATA_NODE_WAITING";
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: rgba(98, 210, 179, 0.2);
+            letter-spacing: 4px;
         }
 
         canvas {
@@ -48,21 +58,29 @@
             max-width: 100% !important;
             height: auto !important;
             user-select: none;
-            -webkit-user-select: none;
         }
 
+        /* Tactical HUD Header */
         #readerHeader { 
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 100;
+            border-bottom: 1px solid rgba(98, 210, 179, 0.1);
         }
-        .header-hidden { transform: translateY(-100%); }
+        .header-hidden { transform: translateY(-100%); opacity: 0; }
+
+        /* Progress Bar */
+        #topProgress {
+            position: absolute; bottom: 0; left: 0; height: 2px;
+            background: var(--brand-teal); width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--brand-teal);
+        }
 
         .loader-ring {
-            border: 2px solid rgba(245, 158, 11, 0.1);
-            border-top: 2px solid #f59e0b;
+            border: 2px solid rgba(98, 210, 179, 0.1);
+            border-top: 2px solid var(--brand-teal);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -70,33 +88,42 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 md:px-8">
-        <div class="flex items-center gap-4">
-            <a href="index.html" class="p-2 text-white/60 hover:text-amber-500 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-brand-deep/90 backdrop-blur-xl flex items-center justify-between px-6">
+        <div id="topProgress"></div>
+        <div class="flex items-center gap-6">
+            <a href="index.html" class="group flex items-center gap-2 text-brand-lavender/60 hover:text-brand-teal transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
+                <span class="font-mono text-[10px] uppercase tracking-widest hidden md:block">Exit_Stream</span>
             </a>
+            <div class="h-8 w-[1px] bg-white/5"></div>
             <div>
-                <h1 id="readerTitle" class="text-white font-semibold text-sm md:text-base truncate max-w-[150px] md:max-w-md">Loading...</h1>
-                <p id="pageCountDisplay" class="text-amber-500 text-[10px] uppercase tracking-widest font-bold">Initializing</p>
+                <h1 id="readerTitle" class="text-white font-bold text-xs md:text-sm uppercase tracking-tighter truncate max-w-[150px] md:max-w-md">Initializing...</h1>
+                <p id="pageCountDisplay" class="text-brand-teal font-mono text-[9px] uppercase tracking-[0.2em]">Syncing_Memory_Nodes</p>
             </div>
         </div>
-        <button onclick="toggleFullScreen()" class="p-2 text-white/60 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-        </button>
+        
+        <div class="flex items-center gap-4">
+            <span id="readPercent" class="font-mono text-[10px] text-brand-teal/40 hidden sm:block">00%_READ</span>
+            <button onclick="toggleFullScreen()" class="p-2 border border-white/5 hover:border-brand-teal/40 rounded transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
+        </div>
     </nav>
 
-    <div id="loadingScreen" class="fixed inset-0 bg-slate-950 z-[200] flex flex-col items-center justify-center text-center px-6">
-        <div class="loader-ring mb-6"></div>
-        <h2 class="font-display text-2xl text-white mb-2">Preparing Experience</h2>
-        <p id="loadStatus" class="text-white/40 text-xs uppercase tracking-widest font-mono">Syncing with Server...</p>
+    <div id="loadingScreen" class="fixed inset-0 bg-brand-deep z-[200] flex flex-col items-center justify-center text-center px-6">
+        <div class="loader-ring mb-8"></div>
+        <div class="space-y-2">
+            <h2 class="font-mono text-xs text-brand-teal uppercase tracking-[0.5em] animate-pulse">Initializing_Neural_Link</h2>
+            <p id="loadStatus" class="text-white/20 text-[10px] font-mono uppercase tracking-widest">Awaiting Data Packets...</p>
+        </div>
     </div>
 
     <main id="viewerContainer">
-        <div id="canvasContainer" class="pb-20"></div>
+        <div id="canvasContainer" class="pb-32"></div>
     </main>
 
     <script>
@@ -105,78 +132,88 @@
         let pdfDoc = null;
         let lastScrollTop = 0;
         const container = document.getElementById('canvasContainer');
+        const topBar = document.getElementById('topProgress');
 
-        // Observer logic: Render page when it enters viewport
-        const observerOptions = { root: document.getElementById('viewerContainer'), rootMargin: '500px 0px', threshold: 0.1 };
-        const pageObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const pageNum = parseInt(entry.target.dataset.pagenum);
-                    renderPage(pageNum, entry.target);
-                    pageObserver.unobserve(entry.target); // Only render once
-                }
-            });
-        }, observerOptions);
-
+        // IMPROVEMENT: Logic to find specific magazine faster
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
             if (!id) { window.location.href = 'index.html'; return; }
 
             try {
+                // In a production environment, you should use /api/magazines/${id} 
+                // to avoid downloading the full list.
                 const response = await fetch(`/api/magazines`);
                 const mags = await response.json();
                 const mag = mags.find(m => m.id == id);
 
                 if (mag?.pdf_path) {
-                    document.getElementById('readerTitle').innerText = mag.title;
+                    document.getElementById('readerTitle').innerText = mag.title.toUpperCase();
                     loadMagazine(mag.pdf_path);
                 } else { throw new Error("File missing"); }
             } catch (err) {
-                document.getElementById('loadStatus').innerText = "Error: File missing or server asleep.";
+                document.getElementById('loadStatus').innerText = "FATAL: CORE_DATA_MISSING";
             }
         }
 
+        // IMPROVEMENT: Added visual progress tracking for the "Open" speed
         async function loadMagazine(path) {
             try {
-                const loadingTask = pdfjsLib.getDocument(path);
+                const loadingTask = pdfjsLib.getDocument({
+                    url: path,
+                    // Allows reading pages while still downloading
+                    disableAutoFetch: false, 
+                    disableStream: false 
+                });
+
                 loadingTask.onProgress = (p) => {
                     const percent = Math.round((p.loaded / (p.total || 1)) * 100);
-                    document.getElementById('loadStatus').innerText = `Downloading: ${percent}%`;
+                    topBar.style.width = `${percent}%`;
+                    document.getElementById('loadStatus').innerText = `BUFFERING_DATA: ${percent}%`;
                 };
 
                 pdfDoc = await loadingTask.promise;
-                document.getElementById('pageCountDisplay').innerText = `Total ${pdfDoc.numPages} Pages`;
+                document.getElementById('pageCountDisplay').innerText = `ARCHIVE: ${pdfDoc.numPages}_NODES`;
 
-                // 1. Get first page to calculate aspect ratio
                 const firstPage = await pdfDoc.getPage(1);
                 const viewport = firstPage.getViewport({ scale: 1 });
                 const aspectRatio = viewport.height / viewport.width;
 
-                // 2. Create placeholders for ALL pages immediately (very fast)
+                // Create Slots
                 for (let n = 1; n <= pdfDoc.numPages; n++) {
                     const slot = document.createElement('div');
                     slot.className = 'page-slot';
                     slot.dataset.pagenum = n;
-                    // Pre-calculate height to prevent layout jump
-                    const slotWidth = Math.min(window.innerWidth * 0.95, viewport.width * 1.5);
+                    const slotWidth = Math.min(window.innerWidth * 0.95, 1000); 
                     slot.style.width = `${slotWidth}px`;
                     slot.style.height = `${slotWidth * aspectRatio}px`;
-                    slot.innerHTML = `<span>Page ${n}</span>`;
                     
                     container.appendChild(slot);
                     pageObserver.observe(slot);
                 }
 
-                // 3. Reveal UI as soon as the structure is ready
                 revealUI();
             } catch (err) {
-                alert("Failed to load document.");
+                console.error(err);
+                document.getElementById('loadStatus').innerText = "DECRYPTION_FAILED";
             }
         }
 
+        // Lazy Rendering Logic
+        const pageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const pageNum = parseInt(entry.target.dataset.pagenum);
+                    renderPage(pageNum, entry.target);
+                    // UI Update: Progress percent
+                    const total = pdfDoc.numPages;
+                    const progress = Math.round((pageNum / total) * 100);
+                    document.getElementById('readPercent').innerText = `${progress.toString().padStart(2, '0')}%_READ`;
+                }
+            });
+        }, { rootMargin: '800px 0px', threshold: 0.01 });
+
         async function renderPage(num, targetElement) {
-            // Avoid double rendering
             if (targetElement.classList.contains('rendered')) return;
             targetElement.classList.add('rendered');
 
@@ -184,11 +221,12 @@
             const clientWidth = window.innerWidth;
             const viewportDefault = page.getViewport({ scale: 1 });
             
+            // Adjust scale based on device
             let scale = (clientWidth < 768) ? (clientWidth * 0.95) / viewportDefault.width : 1.5;
             const viewport = page.getViewport({ scale: scale });
             
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            const context = canvas.getContext('2d', { alpha: false }); // Performance boost
             const dpr = window.devicePixelRatio || 1;
 
             canvas.height = viewport.height * dpr;
@@ -199,22 +237,20 @@
 
             await page.render({ canvasContext: context, viewport: viewport }).promise;
             
-            targetElement.innerHTML = ''; // Clear placeholder text
-            canvas.className = 'opacity-0 transition-opacity duration-500';
+            targetElement.innerHTML = '';
+            canvas.className = 'opacity-0 transition-opacity duration-1000';
             targetElement.appendChild(canvas);
             
-            // Clean up: Optional, free memory of the page object
+            requestAnimationFrame(() => canvas.classList.remove('opacity-0'));
             page.cleanup();
-
-            setTimeout(() => canvas.classList.remove('opacity-0'), 50);
         }
 
         function revealUI() {
             anime({
                 targets: '#loadingScreen',
                 opacity: 0,
-                duration: 600,
-                easing: 'easeInOutQuad',
+                duration: 1000,
+                easing: 'easeOutExpo',
                 complete: () => document.getElementById('loadingScreen').style.display = 'none'
             });
         }
