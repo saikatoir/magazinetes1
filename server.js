@@ -178,3 +178,8 @@ app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
 
+app.post('/api/logout', (req, res) => {
+    req.session.destroy(); // Deletes the session on the server
+    res.clearCookie('connect.sid'); // Clears the cookie on the browser
+    res.json({ success: true });
+});
