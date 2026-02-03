@@ -8,108 +8,73 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
             --brand-teal: #62D2B3;
-            --brand-deep: #12121A;
-            --brand-lavender: #8B9BE1;
+            --brand-deep: #0a0a0f;
         }
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'JetBrains Mono', monospace; 
             background-color: var(--brand-deep); 
             color: #F9EBE0;
             overflow: hidden; margin: 0;
-            -webkit-tap-highlight-color: transparent;
         }
         
         #viewerContainer {
-            height: 100vh;
+            height: 110vh;
             overflow-y: auto;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            padding-top: 80px;
-            background-image: radial-gradient(circle at center, #1a1a2e 0%, #12121a 100%);
+            scroll-behavior: auto; /* Faster response than 'smooth' */
+            padding-top: 50px;
+            background: radial-gradient(circle at center, #161625 0%, #0a0a0f 100%);
         }
 
-        /* Neural Placeholder */
         .page-slot {
-            margin: 40px auto;
-            background: rgba(255,255,255,0.01);
-            border: 0px solid rgba(98, 210, 179, 0.05);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
-            max-width: 95%;
-            align-items: center;
-            justify-content: center;
+            margin: 20px auto;
+            background: rgba(255,255,255,0.02);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.4s ease;
+            will-change: transform;
             position: relative;
         }
-        canvas {
-            display: block;
-            max-width: 100% !important;
-            height: auto !important;
-            user-select: none;
-        }
 
-        /* Tactical HUD Header */
+        /* Glitch effect on header */
         #readerHeader { 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 100;
-            border-bottom: 1px solid rgba(98, 210, 179, 0.1);
+            border-bottom: 1px solid rgba(98, 210, 179, 0.2);
         }
-        .header-hidden { transform: translateY(-100%); opacity: 0; }
+        .header-hidden { transform: translateY(-100%); }
 
-        /* Progress Bar */
-        #topProgress {
-            position: absolute; bottom: 0; left: 0; height: 2px;
-            background: var(--brand-teal); width: 0%;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px var(--brand-teal);
+        #loaderCanvas {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
         }
-
-        .loader-ring {
-            border: 2px solid rgba(98, 210, 179, 0.1);
-            border-top: 2px solid var(--brand-teal);
-            border-radius: 50%;
-            width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-brand-deep/90 backdrop-blur-xl flex items-center justify-between px-6">
-        <div id="topProgress"></div>
+    <nav id="readerHeader" class="fixed top-0 w-full h-16 bg-black/80 backdrop-blur-md flex items-center justify-between px-6">
+        <div id="topProgress" class="absolute bottom-0 left-0 h-[2px] bg-brand-teal transition-all duration-300 shadow-[0_0_10px_#62D2B3]"></div>
         <div class="flex items-center gap-6">
-            <a href="index.html" class="group flex items-center gap-2 text-brand-lavender/60 hover:text-brand-teal transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                <span class="font-mono text-[10px] uppercase tracking-widest hidden md:block">Exit_Stream</span>
+            <a href="index.html" class="text-brand-teal/60 hover:text-brand-teal">
+                <span class="text-[10px] tracking-tighter">/EXIT_STILL</span>
             </a>
-            <div class="h-8 w-[1px] bg-white/5"></div>
             <div>
-                <h1 id="readerTitle" class="text-white font-bold text-xs md:text-sm uppercase tracking-tighter truncate max-w-[150px] md:max-w-md">Initializing...</h1>
-                <p id="pageCountDisplay" class="text-brand-teal font-mono text-[9px] uppercase tracking-[0.2em]">Syncing_Memory_Nodes</p>
+                <h1 id="readerTitle" class="text-white font-bold text-xs uppercase tracking-widest truncate max-w-[200px]">Connecting...</h1>
+                <p id="pageCountDisplay" class="text-brand-teal text-[9px] opacity-50">SYNCING_BIT_STREAM</p>
             </div>
         </div>
-        
-        <div class="flex items-center gap-4">
-            <span id="readPercent" class="font-mono text-[10px] text-brand-teal/40 hidden sm:block">00%_READ</span>
-            <button onclick="toggleFullScreen()" class="p-2 border border-white/5 hover:border-brand-teal/40 rounded transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-            </button>
-        </div>
+        <div id="readPercent" class="font-mono text-[10px] text-brand-teal">00%_SYNC</div>
     </nav>
 
-    <div id="loadingScreen" class="fixed inset-0 bg-brand-deep z-[200] flex flex-col items-center justify-center text-center px-6">
-        <div class="loader-ring mb-8"></div>
-        <div class="space-y-2">
-            <h2 class="font-mono text-xs text-brand-teal uppercase tracking-[0.5em] animate-pulse">Initializing_Neural_Link</h2>
-            <p id="loadStatus" class="text-white/20 text-[10px] font-mono uppercase tracking-widest">Awaiting Data Packets...</p>
+    <div id="loadingScreen" class="fixed inset-0 bg-[#0a0a0f] z-[200] flex flex-col items-center justify-center">
+        <canvas id="loaderCanvas"></canvas>
+        <div class="text-center z-10">
+            <div class="text-brand-teal font-bold text-4xl mb-2 tracking-tighter" id="percLabel">0%</div>
+            <div class="text-[10px] tracking-[0.5em] text-white/40 uppercase" id="loadStatus">Downloading_Neural_Assets</div>
         </div>
     </div>
 
@@ -122,143 +87,155 @@
 
         let pdfDoc = null;
         let lastScrollTop = 0;
+        let downloadProgress = 0;
         const container = document.getElementById('canvasContainer');
-        const topBar = document.getElementById('topProgress');
 
-        // IMPROVEMENT: Logic to find specific magazine faster
+        // --- Interactive Canvas Loader Logic ---
+        const canvas = document.getElementById('loaderCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, columns;
+        const fontSize = 14;
+        const chars = "01010101010101010101010101010101";
+        let drops = [];
+
+        function initLoader() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            columns = Math.floor(width / fontSize);
+            drops = Array(columns).fill(1);
+        }
+
+        function drawLoader() {
+            ctx.fillStyle = "rgba(10, 10, 15, 0.1)";
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = "#62D2B3";
+            ctx.font = fontSize + "px monospace";
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                // Speed up drops based on download progress
+                const speed = 1 + (downloadProgress / 20);
+                if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+                drops[i] += speed;
+            }
+        }
+        setInterval(drawLoader, 33);
+        window.addEventListener('resize', initLoader);
+        initLoader();
+
+        // --- Core Reader Logic ---
         async function init() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-            if (!id) { window.location.href = 'index.html'; return; }
+            const id = new URLSearchParams(window.location.search).get('id');
+            if (!id) return window.location.href = 'index.html';
 
             try {
-                // In a production environment, you should use /api/magazines/${id} 
-                // to avoid downloading the full list.
                 const response = await fetch(`/api/magazines`);
                 const mags = await response.json();
                 const mag = mags.find(m => m.id == id);
 
                 if (mag?.pdf_path) {
-                    document.getElementById('readerTitle').innerText = mag.title.toUpperCase();
+                    document.getElementById('readerTitle').innerText = mag.title;
                     loadMagazine(mag.pdf_path);
-                } else { throw new Error("File missing"); }
-            } catch (err) {
-                document.getElementById('loadStatus').innerText = "FATAL: CORE_DATA_MISSING";
-            }
-        }
-
-        // IMPROVEMENT: Added visual progress tracking for the "Open" speed
-        async function loadMagazine(path) {
-            try {
-                const loadingTask = pdfjsLib.getDocument({
-                    url: path,
-                    // Allows reading pages while still downloading
-                    disableAutoFetch: false, 
-                    disableStream: false 
-                });
-
-                loadingTask.onProgress = (p) => {
-                    const percent = Math.round((p.loaded / (p.total || 1)) * 100);
-                    topBar.style.width = `${percent}%`;
-                    document.getElementById('loadStatus').innerText = `BUFFERING_DATA: ${percent}%`;
-                };
-
-                pdfDoc = await loadingTask.promise;
-                document.getElementById('pageCountDisplay').innerText = `ARCHIVE: ${pdfDoc.numPages}_NODES`;
-
-                const firstPage = await pdfDoc.getPage(1);
-                const viewport = firstPage.getViewport({ scale: 1 });
-                const aspectRatio = viewport.height / viewport.width;
-
-                // Create Slots
-                for (let n = 1; n <= pdfDoc.numPages; n++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'page-slot';
-                    slot.dataset.pagenum = n;
-                    const slotWidth = Math.min(window.innerWidth * 0.95, 1000); 
-                    slot.style.width = `${slotWidth}px`;
-                    slot.style.height = `${slotWidth * aspectRatio}px`;
-                    
-                    container.appendChild(slot);
-                    pageObserver.observe(slot);
                 }
-
-                revealUI();
             } catch (err) {
-                console.error(err);
-                document.getElementById('loadStatus').innerText = "DECRYPTION_FAILED";
+                document.getElementById('loadStatus').innerText = "FATAL_LINK_ERROR";
             }
         }
 
-        // Lazy Rendering Logic
+        async function loadMagazine(path) {
+            const loadingTask = pdfjsLib.getDocument(path);
+
+            loadingTask.onProgress = (p) => {
+                downloadProgress = Math.round((p.loaded / (p.total || 1)) * 100);
+                document.getElementById('percLabel').innerText = downloadProgress + "%";
+                document.getElementById('topProgress').style.width = downloadProgress + "%";
+            };
+
+            pdfDoc = await loadingTask.promise;
+            document.getElementById('pageCountDisplay').innerText = `ARCHIVE: ${pdfDoc.numPages}_NODES`;
+
+            const firstPage = await pdfDoc.getPage(1);
+            const viewport = firstPage.getViewport({ scale: 1 });
+            const aspectRatio = viewport.height / viewport.width;
+
+            // Pre-create slots for smooth scrolling
+            for (let n = 1; n <= pdfDoc.numPages; n++) {
+                const slot = document.createElement('div');
+                slot.className = 'page-slot';
+                slot.dataset.pagenum = n;
+                const slotWidth = Math.min(window.innerWidth * 0.92, 1100);
+                slot.style.width = `${slotWidth}px`;
+                slot.style.height = `${slotWidth * aspectRatio}px`;
+                container.appendChild(slot);
+                pageObserver.observe(slot);
+            }
+            revealUI();
+        }
+
         const pageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    const pageNum = parseInt(entry.target.dataset.pagenum);
-                    renderPage(pageNum, entry.target);
-                    // UI Update: Progress percent
-                    const total = pdfDoc.numPages;
-                    const progress = Math.round((pageNum / total) * 100);
-                    document.getElementById('readPercent').innerText = `${progress.toString().padStart(2, '0')}%_READ`;
+                    const num = parseInt(entry.target.dataset.pagenum);
+                    renderPage(num, entry.target);
+                    
+                    // Update UI
+                    const prog = Math.round((num / pdfDoc.numPages) * 100);
+                    document.getElementById('readPercent').innerText = `${prog}%_SYNC`;
+                    
+                    // PREDICTIVE RENDERING: Load next and previous
+                    if (num < pdfDoc.numPages) renderPage(num + 1);
+                    if (num > 1) renderPage(num - 1);
                 }
             });
-        }, { rootMargin: '800px 0px', threshold: 0.01 });
+        }, { rootMargin: '1000px', threshold: 0.01 });
 
-        async function renderPage(num, targetElement) {
-            if (targetElement.classList.contains('rendered')) return;
-            targetElement.classList.add('rendered');
+        async function renderPage(num, target = null) {
+            const el = target || document.querySelector(`[data-pagenum="${num}"]`);
+            if (!el || el.classList.contains('rendered')) return;
+            el.classList.add('rendered');
 
             const page = await pdfDoc.getPage(num);
-            const clientWidth = window.innerWidth;
-            const viewportDefault = page.getViewport({ scale: 1 });
-            
-            // Adjust scale based on device
-            let scale = (clientWidth < 768) ? (clientWidth * 0.95) / viewportDefault.width : 1.5;
-            const viewport = page.getViewport({ scale: scale });
+            const scale = (window.innerWidth < 768) ? (window.innerWidth * 0.92) / page.getViewport({scale:1}).width : 1.8;
+            const viewport = page.getViewport({ scale });
             
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { alpha: false }); // Performance boost
+            const ctx = canvas.getContext('2d', { alpha: false });
             const dpr = window.devicePixelRatio || 1;
 
-            canvas.height = viewport.height * dpr;
             canvas.width = viewport.width * dpr;
+            canvas.height = viewport.height * dpr;
             canvas.style.width = "100%";
             canvas.style.height = "100%";
-            context.scale(dpr, dpr);
+            ctx.scale(dpr, dpr);
 
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            await page.render({ canvasContext: ctx, viewport }).promise;
             
-            targetElement.innerHTML = '';
-            canvas.className = 'opacity-0 transition-opacity duration-1000';
-            targetElement.appendChild(canvas);
+            el.innerHTML = '';
+            canvas.style.opacity = '0';
+            canvas.style.transition = 'opacity 0.5s ease-out';
+            el.appendChild(canvas);
             
-            requestAnimationFrame(() => canvas.classList.remove('opacity-0'));
+            requestAnimationFrame(() => canvas.style.opacity = '1');
             page.cleanup();
         }
 
         function revealUI() {
             anime({
                 targets: '#loadingScreen',
-                opacity: 0,
-                duration: 1000,
-                easing: 'easeOutExpo',
+                translateY: '-100%',
+                duration: 800,
+                easing: 'easeInOutExpo',
                 complete: () => document.getElementById('loadingScreen').style.display = 'none'
             });
         }
 
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        }
-
+        // Header auto-hide
         const viewer = document.getElementById('viewerContainer');
         viewer.addEventListener('scroll', () => {
             let st = viewer.scrollTop;
-            if (st > lastScrollTop && st > 100) {
-                document.getElementById('readerHeader').classList.add('header-hidden');
-            } else {
-                document.getElementById('readerHeader').classList.remove('header-hidden');
-            }
+            document.getElementById('readerHeader').classList.toggle('header-hidden', st > lastScrollTop && st > 100);
             lastScrollTop = st;
         }, { passive: true });
 
